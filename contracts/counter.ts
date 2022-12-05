@@ -43,11 +43,13 @@ export class Counter extends SmartContract {
 
   async callIncrement(prevTx: bsv.Transaction, utxoMgr: UtxoManager) {
     const inputIndex = 0;
+
+    const newCounter = this.next();
+    newCounter.count++;
+
     let tx: bsv.Transaction = new bsv.Transaction()
       .addInputFromPrevTx(prevTx)
       .setOutput(0, (tx: bsv.Transaction) => {
-        const newCounter = this.next()
-        newCounter.count++
         newCounter.lockTo = { tx, outputIndex: 0 };
         return new bsv.Transaction.Output({
           script: newCounter.lockingScript,
@@ -62,11 +64,12 @@ export class Counter extends SmartContract {
         })
       })
 
-    const signedTx = await signAndSend(tx);
+    const calledTx = await signAndSend(tx);
+
 
     // Collect the new p2pkh utxo if it exists
-    utxoMgr.collectUtxoFrom(signedTx);
+    utxoMgr.collectUtxoFrom(calledTx);
 
-    return signedTx;
+    return {calledTx, counter: newCounter};
   }
 }
