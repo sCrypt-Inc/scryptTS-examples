@@ -1,4 +1,4 @@
-import { bsv } from 'scryptlib';
+import { bsv } from 'scrypt-ts';
 import { privateKey } from './privateKey';
 import { UTXO, fetchUtxos, sendTx, sleep } from './txHelper';
 

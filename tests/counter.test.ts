@@ -1,7 +1,7 @@
-import { expect } from 'chai';
 import { Counter } from '../contracts/counter';
-import { bsv, dummyUTXO, createInputFromPrevTx } from '../txHelper';
-import { getPreimage } from 'scryptlib'
+import { dummyUTXO } from '../txHelper';
+import { bsv, SigHashPreimage } from 'scrypt-ts'
+import { expect } from 'chai';
 
 describe('Test SmartContract `Counter`', () => {
 
@@ -26,9 +26,9 @@ describe('Test SmartContract `Counter`', () => {
       const newCounter = prevInstance.next();
       newCounter.count++;
 
-      const inputIndex = 1;
-      const callTx: bsv.Transaction = new bsv.Transaction().from(dummyUTXO)
-        .addInput(createInputFromPrevTx(prevTx))
+      const inputIndex = 0;
+      const callTx: bsv.Transaction = new bsv.Transaction()
+        .addInputFromPrevTx(prevTx)
         .setOutput(0, (tx: bsv.Transaction) => {
           newCounter.lockTo = { tx, outputIndex: 0 };
           return new bsv.Transaction.Output({
@@ -36,21 +36,15 @@ describe('Test SmartContract `Counter`', () => {
             satoshis: balance,
           })
         })
-        .setInputScript(inputIndex, (tx: bsv.Transaction, prevOutput: bsv.Transaction.Output) => {
+        .setInputScript({ inputIndex }, (tx: bsv.Transaction) => {
           prevInstance.unlockFrom = { tx, inputIndex };
-          const prevInstance_ = prevInstance.clone();
-          const preimage = getPreimage(tx, prevOutput.script, prevOutput.satoshis, inputIndex)
-          return prevInstance_.getUnlockingScript(() => {
-            prevInstance_.increment(preimage);
+          return prevInstance.getUnlockingScript((self) => {
+            self.increment(new SigHashPreimage(tx.getPreimage(0)), BigInt(tx.getOutputAmount(0)));
           })
         });
 
-      const result = prevInstance.verify(() => {
-        const preimage = getPreimage(callTx, prevInstance.lockingScript, balance, inputIndex);
-        prevInstance.increment(preimage);
-      })
+      const result = callTx.verifyInputScript(0)
       expect(result.success, result.error).to.be.true;
-      // console.log('callTx fee', callTx.getEstimateFee())
 
       prevTx = callTx;
       prevInstance = newCounter;

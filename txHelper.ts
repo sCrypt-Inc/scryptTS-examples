@@ -1,10 +1,8 @@
 
-import { bsv } from 'scryptlib';
+import { bsv } from 'scrypt-ts';
 import { randomBytes } from 'crypto';
 import { privateKey } from './privateKey'
 import axios from 'axios';
-
-export { bsv };
 
 const API_PREFIX = 'https://api.whatsonchain.com/v1/bsv/test'
 
@@ -19,12 +17,7 @@ export const dummyUTXO = {
   satoshis: 100000
 };
 
-export type UTXO = {
-  txId: string,
-  outputIndex: number,
-  satoshis: number,
-  script: string
-}
+export type UTXO = bsv.Transaction.IUnspentOutput;
 
 export async function fetchUtxos(address: string = privateKey.toAddress().toString()): Promise<UTXO[]> {
   const url = `${API_PREFIX}/address/${address}/unspent`;
@@ -61,17 +54,6 @@ export async function sendTx(tx: bsv.Transaction): Promise<string> {
 
     throw error
   }
-}
-
-//create an input spending from prevTx's output, with empty script
-export function createInputFromPrevTx(tx: bsv.Transaction, outputIndex: number = 0): bsv.Transaction.Input {
-  const outputIdx = outputIndex || 0
-  return new bsv.Transaction.Input({
-    prevTxId: tx.id,
-    outputIndex: outputIdx,
-    script: new bsv.Script(''), // placeholder
-    output: tx.outputs[outputIdx]
-  })
 }
 
 export const sleep = async (seconds: number) => {

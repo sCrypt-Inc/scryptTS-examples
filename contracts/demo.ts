@@ -1,6 +1,5 @@
-import { method, prop, SmartContract, assert } from "scrypt-ts";
-import { bsv } from 'scryptlib';
-import { createInputFromPrevTx, fetchUtxos, newTx, signAndSend } from '../txHelper';
+import { method, prop, SmartContract, assert, bsv } from "scrypt-ts";
+import { newTx, signAndSend } from '../txHelper';
 import { UtxoManager } from '../utxoManager'
 
 export class Demo extends SmartContract {
@@ -58,11 +57,11 @@ export class Demo extends SmartContract {
     async callAdd(z: bigint, prevTx: bsv.Transaction, utxoMgr: UtxoManager) {
 
         let tx: bsv.Transaction = new bsv.Transaction()
-            .addInput(createInputFromPrevTx(prevTx))
-            .setInputScript(0, (tx: bsv.Transaction, prevOutput: bsv.Transaction.Output) => {
-                return this.getUnlockingScript(() => {
+            .addInputFromPrevTx(prevTx)
+            .setInputScript(0, (tx: bsv.Transaction) => {
+                return this.getUnlockingScript((self) => {
                     // call previous demo's public method to get the unlocking script.
-                    this.add(z)
+                    self.add(z)
                 })
             })
 
