@@ -15,10 +15,11 @@ async function main() {
 
   let prevTx = deployTx;
   for (let i = 0; i < 3; i++) {
-    const { calledTx, counter: newCounter } = await counter.callIncrement(prevTx, uxtoMgr);
-    counter = newCounter
-    prevTx = calledTx;
-    console.log('Counter contract called: ', calledTx.id)
+    const calledTx = await counter.callIncrement(prevTx, uxtoMgr);
+    counter = counter.next();
+    counter.count++;
+    prevTx = calledTx.calledTx;
+    console.log(calledTx.calledTx.verify())
   }
 
 }
