@@ -64,6 +64,14 @@ describe.only("Test SmartContract `Crowdfund`", () => {
           satoshis: 1,
         });
       })
+      .addOutput(
+        new bsv.Transaction.Output({
+          script: bsv.Script.buildPublicKeyHashOut(
+            privateKeyRecepient.toAddress()
+          ),
+          satoshis: 1000,
+        })
+      )
       .setInputScript(
         {
           inputIndex,
