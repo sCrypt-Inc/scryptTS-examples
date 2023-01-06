@@ -66,8 +66,10 @@ export class Crowdfund extends SmartContract {
 
     assert(this.checkSig(sig, this.contributor));
   }
+  private balance: number;
 
   getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
+    this.balance = initBalance;
     const tx = new bsv.Transaction().from(utxos).addOutput(
       new bsv.Transaction.Output({
         script: this.lockingScript,
@@ -78,34 +80,30 @@ export class Crowdfund extends SmartContract {
     return tx;
   }
 
-  //   getCallTxForCollect(
-  //     pubKeys: bsv.PublicKey[],
-  //     privateKey: bsv.PrivateKey[],
-  //     prevTx: bsv.Transaction
-  //   ): bsv.Transaction {
-  //     const inputIndex = 0;
-  //     return new bsv.Transaction().addInputFromPrevTx(prevTx).setInputScript(
-  //       {
-  //         inputIndex,
-  //         privateKey,
-  //       },
-  //       (tx) => {
-  //         const sigs = tx.getSignature(inputIndex);
-
-  //         this.unlockFrom = { tx, inputIndex };
-
-  //         return this.getUnlockingScript((self) => {
-  //           self.collect(
-  //             [
-  //               PubKey(toHex(pubKeys[0])),
-  //               PubKey(toHex(pubKeys[1])),
-  //               PubKey(toHex(pubKeys[2])),
-  //             ],
-  //             [Sig(sigs[0]), Sig(sigs[1]), Sig(sigs[2])],
-  //             [true, true, true]
-  //           );
-  //         });
-  //       }
-  //     );
-  //   }
+  getCallTx(
+    utxos: UTXO[],
+    prevTx: bsv.Transaction,
+    nextInst: Crowdfund
+  ): bsv.Transaction {
+    const inputIndex = 1;
+    return new bsv.Transaction()
+      .from(utxos)
+      .addInputFromPrevTx(prevTx)
+      .setOutput(0, (tx: bsv.Transaction) => {
+        nextInst.lockTo = { tx, outputIndex: 0 };
+        return new bsv.Transaction.Output({
+          script: nextInst.lockingScript,
+          satoshis: this.balance,
+        });
+      })
+      .setInputScript(inputIndex, (tx: bsv.Transaction) => {
+        this.unlockFrom = { tx, inputIndex };
+        return this.getUnlockingScript((self) => {
+          self.collect(
+            SigHashPreimage(tx.getPreimage(inputIndex)),
+            BigInt(this.balance)
+          );
+        });
+      });
+  }
 }

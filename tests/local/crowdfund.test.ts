@@ -44,82 +44,19 @@ describe.only("Test SmartContract `Crowdfund`", () => {
       PubKey(toHex(publicKeyContributor)),
       auctionDeadline,
       target
-    );
+    ).markAsGenesis();
 
-    let newInstance = crowdfund.next();
+    const deployTx = crowdfund.getDeployTx(utxos, 1000);
 
-    const initBalance = 5000;
-    const outputIndex = 0;
-    const inputIndex = 0;
+    let prevTx = deployTx;
+    let prevInstance = crowdfund;
 
-    let callTx: bsv.Transaction = new bsv.Transaction()
-      .addDummyInput(crowdfund.lockingScript, initBalance)
-      .setOutput(outputIndex, (tx: bsv.Transaction) => {
-        // bind contract & tx locking relation
-        return new bsv.Transaction.Output({
-          // use newInstance's lockingscript as the new UTXO's lockingscript
-          script: buildPublicKeyHashScript(
-            PubKeyHash(toHex(publicKeyRecepient))
-          ),
-          satoshis: 1,
-        });
-      })
-      .addOutput(
-        new bsv.Transaction.Output({
-          script: bsv.Script.buildPublicKeyHashOut(
-            privateKeyRecepient.toAddress()
-          ),
-          satoshis: 1000,
-        })
-      )
-      .setInputScript(
-        {
-          inputIndex,
-        },
-        (tx: bsv.Transaction) => {
-          // bind contract & tx unlocking relation
-          // use the cloned version bcoz this callback will be executed multiple times during tx building process,
-          // and calling contract method may have side effects on its properties.
-          return crowdfund.getUnlockingScript((cloned) => {
-            // call previous counter's public method to get the unlocking script.
-            cloned.unlockFrom = { tx, inputIndex };
-            cloned.collect(SigHashPreimage(tx.getPreimage(inputIndex)), 2000n);
-          });
-        }
-      )
-      .seal();
+    const newCrowdFund = prevInstance.next();
+
+    const callTx = prevInstance.getCallTx(utxos, prevTx, newCrowdFund);
 
     let result = callTx.verifyInputScript(0);
 
     expect(result.success, result.error).to.eq(true);
-
-    // crowdfund.verify((self) => {
-    //   self.collect();
-
-    // // construct a transaction for deployment
-    // const deployTx = crowdfund.getDeployTx(utxos, 1);
-
-    // let prevTx = deployTx;
-    // let prevInstance = counter;
-
-    // // multiple calls
-    // for (let i = 0; i < 3; i++) {
-    //   // 1. build a new contract instance
-    //   const newCounter = prevInstance.next();
-    //   // 2. apply the updates on the new instance.
-    //   newCounter.count++;
-    //   // 3. construct a transaction for contract call
-    //   const callTx = prevInstance.getCallTx(utxos, prevTx, newCounter);
-    //   // 4. run `verify` method on `prevInstance`
-    //   const result = prevInstance.verify((self) => {
-    //     self.increment();
-    //   });
-
-    //   expect(result.success, result.error).to.be.true;
-
-    //   // prepare for the next iteration
-    //   prevTx = callTx;
-    //   prevInstance = newCounter;
-    // }
   });
 });
