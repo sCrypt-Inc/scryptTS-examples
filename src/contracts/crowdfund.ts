@@ -43,9 +43,7 @@ export class Crowdfund extends SmartContract {
   }
 
   @method()
-  public collect(txPreimage: SigHashPreimage, raisedAmount: bigint) {
-    assert(this.checkPreimage(txPreimage));
-
+  public collect(raisedAmount: bigint) {
     // reach target
     assert(raisedAmount >= this.target);
 
@@ -54,7 +52,10 @@ export class Crowdfund extends SmartContract {
 
     const output = Utils.buildOutput(lockingScript, raisedAmount);
 
-    assert(hash256(output) === SigHash.hashOutputs(txPreimage));
+    assert(
+      this.ctx.hashOutputs ==
+        hash256(this.buildStateOutput(this.ctx.utxo.value))
+    );
   }
 
   @method()
@@ -99,10 +100,7 @@ export class Crowdfund extends SmartContract {
       .setInputScript(inputIndex, (tx: bsv.Transaction) => {
         this.unlockFrom = { tx, inputIndex };
         return this.getUnlockingScript((self) => {
-          self.collect(
-            SigHashPreimage(tx.getPreimage(inputIndex)),
-            BigInt(this.balance)
-          );
+          self.collect(BigInt(this.balance));
         });
       });
   }
