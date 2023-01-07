@@ -119,10 +119,6 @@ export class Crowdfund extends SmartContract {
       .setInputScript(
         {
           inputIndex,
-          sigtype:
-            bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
-            bsv.crypto.Signature.SIGHASH_SINGLE |
-            bsv.crypto.Signature.SIGHASH_FORKID,
         },
         (tx) => {
           this.unlockFrom = { tx, inputIndex };
