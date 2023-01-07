@@ -42,28 +42,47 @@ export class Crowdfund extends SmartContract {
     this.target = target;
   }
 
+  // @method()
+  // public collect(raisedAmount: bigint) {
+  //   // reach target
+  //   assert(raisedAmount >= this.target);
+
+  //   // fund goes to the recepient
+  //   const lockingScript = Utils.buildPublicKeyHashScript(this.recepient);
+
+  //   const output = Utils.buildOutput(
+  //     lockingScript,
+  //     this.ctx.utxo.value + raisedAmount
+  //   );
+
+  //   assert(this.ctx.hashOutputs == hash256(output));
+  // }
+
   @method()
-  public collect(raisedAmount: bigint) {
+  public pledge(raisedAmount: bigint) {
     // reach target
     assert(raisedAmount >= this.target);
 
-    // fund goes to the recepient
+    // fund goes to the recipient
     const lockingScript = Utils.buildPublicKeyHashScript(this.recepient);
+
+    console.log("here is the lockingscript ", lockingScript);
 
     const output = Utils.buildOutput(lockingScript, raisedAmount);
 
-    assert(
-      this.ctx.hashOutputs ==
-        hash256(this.buildStateOutput(this.ctx.utxo.value))
-    );
+    console.log("here is the output ", output);
+
+    console.log("here is the hashoutputs ", this.ctx.hashOutputs);
+
+    console.log("here is the hash256(output) ", hash256(output));
+
+    assert(hash256(output) == this.ctx.hashOutputs);
   }
 
   @method()
-  public refund(sig: Sig, txPreimage: SigHashPreimage) {
-    assert(this.checkPreimage(txPreimage));
-
+  public refund(sig: Sig) {
     // fundraising expired
-    assert(SigHash.nLocktime(txPreimage) >= this.deadline);
+    assert(this.ctx.nLocktime >= this.deadline);
 
     assert(this.checkSig(sig, this.contributor));
   }
@@ -86,22 +105,31 @@ export class Crowdfund extends SmartContract {
     prevTx: bsv.Transaction,
     nextInst: Crowdfund
   ): bsv.Transaction {
-    const inputIndex = 1;
+    const inputIndex = 0;
     return new bsv.Transaction()
-      .from(utxos)
       .addInputFromPrevTx(prevTx)
+      .from(utxos)
       .setOutput(0, (tx: bsv.Transaction) => {
         nextInst.lockTo = { tx, outputIndex: 0 };
         return new bsv.Transaction.Output({
           script: nextInst.lockingScript,
-          satoshis: this.balance,
+          satoshis: tx.getInputAmount(inputIndex),
         });
       })
-      .setInputScript(inputIndex, (tx: bsv.Transaction) => {
-        this.unlockFrom = { tx, inputIndex };
-        return this.getUnlockingScript((self) => {
-          self.collect(BigInt(this.balance));
-        });
-      });
+      .setInputScript(
+        {
+          inputIndex,
+          sigtype:
+            bsv.crypto.Signature.SIGHASH_ANYONECANPAY |
+            bsv.crypto.Signature.SIGHASH_SINGLE |
+            bsv.crypto.Signature.SIGHASH_FORKID,
+        },
+        (tx) => {
+          this.unlockFrom = { tx, inputIndex };
+          return this.getUnlockingScript((self) => {
+            self.pledge(1000n);
+          });
+        }
+      );
   }
 }
