@@ -113,7 +113,7 @@ export class Crowdfund extends SmartContract {
         nextInst.lockTo = { tx, outputIndex: 0 };
         return new bsv.Transaction.Output({
           script: nextInst.lockingScript,
-          satoshis: tx.getInputAmount(inputIndex),
+          satoshis: 1000,
         });
       })
       .setInputScript(
