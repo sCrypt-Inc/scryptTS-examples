@@ -7,7 +7,8 @@ import {
     randomPrivateKey,
 } from './util/txHelper'
 import { myPrivateKey } from './util/privateKey'
-import { bsv, PubKey, Ripemd160, Sig, toHex, utxoFromOutput } from 'scrypt-ts'
+import { PubKey, Ripemd160, Sig, toHex, utxoFromOutput } from 'scrypt-ts'
+import { Transaction } from 'bsv'
 
 async function main() {
     const [privateKey1, , publicKeyHash1, address1] = randomPrivateKey()
@@ -37,10 +38,10 @@ async function main() {
 
     // call
     const changeAddress = await signer.getDefaultAddress()
-    const unsignedCallTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallTx: Transaction = await new Transaction()
         .addInputFromPrevTx(deployTx)
         .change(changeAddress)
-        .setInputScriptAsync({ inputIndex }, (tx: bsv.Transaction) => {
+        .setInputScriptAsync({ inputIndex }, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             accumulatorMultiSig.unlockFrom = { tx, inputIndex }
             // use the cloned version because this callback may be executed multiple times during tx building process,

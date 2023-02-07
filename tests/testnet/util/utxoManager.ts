@@ -1,6 +1,7 @@
-import { bsv, UTXO } from 'scrypt-ts'
+import { UTXO } from 'scrypt-ts'
 import { myPrivateKey } from './privateKey'
 import { fetchUtxos, sendTx, sleep } from './txHelper'
+import { Script, PrivateKey, Transaction } from 'bsv'
 
 enum UtxoMgrInitState {
     UNINITIALIZED,
@@ -9,7 +10,7 @@ enum UtxoMgrInitState {
 }
 
 export class UtxoManager {
-    privKey: bsv.PrivateKey
+    privKey: PrivateKey
     address: string
     private availableUtxos: UTXO[] = []
     private initStates: UtxoMgrInitState = UtxoMgrInitState.UNINITIALIZED
@@ -46,7 +47,7 @@ export class UtxoManager {
         return this
     }
 
-    collectUtxoFrom(tx: bsv.Transaction) {
+    collectUtxoFrom(tx: Transaction) {
         tx.outputs.forEach((output, outputIndex) => {
             if (output.script.toHex() === this.utxoScriptHex) {
                 this.availableUtxos.push({
@@ -112,11 +113,11 @@ export class UtxoManager {
         const dustLimit = 1
         if (accAmt > targetSatoshis + dustLimit) {
             // split `accAmt` to `targetSatoshis` + `change`
-            const splitTx = new bsv.Transaction()
+            const splitTx = new Transaction()
                 .from(usedUtxos)
                 .addOutput(
-                    new bsv.Transaction.Output({
-                        script: bsv.Script.buildPublicKeyHashOut(this.address),
+                    new Transaction.Output({
+                        script: Script.buildPublicKeyHashOut(this.address),
                         satoshis: targetSatoshis,
                     })
                 )
@@ -153,7 +154,7 @@ export class UtxoManager {
 
     get utxoScriptHex(): string {
         // all managed utxos should have the same P2PKH script for `this.address`
-        return bsv.Script.buildPublicKeyHashOut(this.address).toHex()
+        return Script.buildPublicKeyHashOut(this.address).toHex()
     }
 }
 

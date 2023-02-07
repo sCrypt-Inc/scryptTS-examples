@@ -1,13 +1,5 @@
 import { expect } from 'chai'
-import {
-    bsv,
-    toHex,
-    PubKey,
-    Sig,
-    signTx,
-    PubKeyHash,
-    FixedArray,
-} from 'scrypt-ts'
+import { toHex, PubKey, Sig, signTx, PubKeyHash, FixedArray } from 'scrypt-ts'
 import { MultiSig } from '../../src/contracts/multiSig'
 import {
     newTx,

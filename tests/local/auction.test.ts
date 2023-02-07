@@ -1,14 +1,15 @@
 import { expect } from 'chai'
 import { Auction } from '../../src/contracts/auction'
-import { bsv, PubKeyHash, toHex, PubKey } from 'scrypt-ts'
+import { PubKeyHash, toHex, PubKey } from 'scrypt-ts'
 import { dummyUTXO, inputSatoshis } from './util/txHelper'
+import { PrivateKey, PublicKey, Transaction, crypto, Script } from 'bsv'
 
-const privateKeyAuctioneer = bsv.PrivateKey.fromRandom('testnet')
-const publicKeyAuctioneer = bsv.PublicKey.fromPrivateKey(privateKeyAuctioneer)
+const privateKeyAuctioneer = PrivateKey.fromRandom('testnet')
+const publicKeyAuctioneer = PublicKey.fromPrivateKey(privateKeyAuctioneer)
 
-const privateKeyBidder = bsv.PrivateKey.fromRandom('testnet')
-const publicKeyBidder = bsv.PublicKey.fromPrivateKey(privateKeyBidder)
-const publicKeyHashBidder = bsv.crypto.Hash.sha256ripemd160(
+const privateKeyBidder = PrivateKey.fromRandom('testnet')
+const publicKeyBidder = PublicKey.fromPrivateKey(privateKeyBidder)
+const publicKeyHashBidder = crypto.Hash.sha256ripemd160(
     publicKeyBidder.toBuffer()
 )
 
@@ -27,21 +28,19 @@ describe('Test SmartContract `Auction` on testnet', () => {
 })
 
 async function bidCallTest() {
-    const privateKeyHighestBid = bsv.PrivateKey.fromRandom('testnet')
-    const publicKeyHighestBid =
-        bsv.PublicKey.fromPrivateKey(privateKeyHighestBid)
-    const publicKeyHashHighestBid = bsv.crypto.Hash.sha256ripemd160(
+    const privateKeyHighestBid = PrivateKey.fromRandom('testnet')
+    const publicKeyHighestBid = PublicKey.fromPrivateKey(privateKeyHighestBid)
+    const publicKeyHashHighestBid = crypto.Hash.sha256ripemd160(
         publicKeyHighestBid.toBuffer()
     )
     const addressHighestBid = privateKeyHighestBid.toAddress()
 
-    const privateKeyAuctioneer = bsv.PrivateKey.fromRandom('testnet')
-    const publicKeyAuctioneer =
-        bsv.PublicKey.fromPrivateKey(privateKeyAuctioneer)
+    const privateKeyAuctioneer = PrivateKey.fromRandom('testnet')
+    const publicKeyAuctioneer = PublicKey.fromPrivateKey(privateKeyAuctioneer)
 
-    const privateKeyNewBid = bsv.PrivateKey.fromRandom('testnet')
-    const publicKeyNewBid = bsv.PublicKey.fromPrivateKey(privateKeyNewBid)
-    const publicKeyHashNewBid = bsv.crypto.Hash.sha256ripemd160(
+    const privateKeyNewBid = PrivateKey.fromRandom('testnet')
+    const publicKeyNewBid = PublicKey.fromPrivateKey(privateKeyNewBid)
+    const publicKeyHashNewBid = crypto.Hash.sha256ripemd160(
         publicKeyNewBid.toBuffer()
     )
     const addressNewBid = privateKeyNewBid.toAddress()
@@ -72,29 +71,29 @@ async function bidCallTest() {
     const inputIndex = 0
     newInstance.bidder = PubKeyHash(toHex(publicKeyHashNewBid))
 
-    const callTx: bsv.Transaction = new bsv.Transaction()
+    const callTx: Transaction = new Transaction()
         .addDummyInput(auction.lockingScript, initBalance)
         .setOutput(outputIndex, () => {
             // bind contract & tx locking relation
-            return new bsv.Transaction.Output({
+            return new Transaction.Output({
                 // use the locking script of newInstance, as the locking script of the new UTXO
                 script: newInstance.lockingScript,
                 satoshis: bid,
             })
         })
         .addOutput(
-            new bsv.Transaction.Output({
-                script: bsv.Script.buildPublicKeyHashOut(addressHighestBid),
+            new Transaction.Output({
+                script: Script.buildPublicKeyHashOut(addressHighestBid),
                 satoshis: inputSatoshis,
             })
         )
         .addOutput(
-            new bsv.Transaction.Output({
-                script: bsv.Script.buildPublicKeyHashOut(addressNewBid),
+            new Transaction.Output({
+                script: Script.buildPublicKeyHashOut(addressNewBid),
                 satoshis: changeSatoshis,
             })
         )
-        .setInputScript(inputIndex, (tx: bsv.Transaction) => {
+        .setInputScript(inputIndex, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             // use the cloned version because this callback will be executed multiple times during tx building process,
             // and calling contract method may have side effects on its properties.

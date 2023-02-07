@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     buildPublicKeyHashScript,
     hash256,
     method,
@@ -12,6 +11,8 @@ import {
     Utils,
     UTXO,
 } from 'scrypt-ts'
+
+import { Transaction, PrivateKey } from 'bsv'
 
 export class Crowdfund extends SmartContract {
     @prop()
@@ -75,9 +76,9 @@ export class Crowdfund extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -88,20 +89,20 @@ export class Crowdfund extends SmartContract {
 
     // Local method to construct fund collection TX.
     getCallCollectTx(
-        prevTx: bsv.Transaction,
+        prevTx: Transaction,
         recipient: PubKeyHash,
         raisedAmount: bigint
-    ): bsv.Transaction {
+    ): Transaction {
         const inputIndex = 0
-        return new bsv.Transaction()
+        return new Transaction()
             .addInputFromPrevTx(prevTx)
             .setOutput(0, () => {
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: buildPublicKeyHashScript(recipient),
                     satoshis: Number(raisedAmount),
                 })
             })
-            .setInputScript(inputIndex, (tx: bsv.Transaction) => {
+            .setInputScript(inputIndex, (tx: Transaction) => {
                 this.unlockFrom = { tx, inputIndex }
                 return this.getUnlockingScript((self) => {
                     self.collect(raisedAmount)
@@ -112,18 +113,18 @@ export class Crowdfund extends SmartContract {
 
     // Local method to construct refund TX.
     getCallRefundTx(
-        prevTx: bsv.Transaction,
+        prevTx: Transaction,
         anyone: PubKeyHash,
-        privateKey: bsv.PrivateKey,
+        privateKey: PrivateKey,
         locktime: number
-    ): bsv.Transaction {
+    ): Transaction {
         const inputIndex = 0
-        const tx = new bsv.Transaction().addInputFromPrevTx(prevTx)
+        const tx = new Transaction().addInputFromPrevTx(prevTx)
 
         tx.setLockTime(locktime)
 
-        tx.setOutput(0, (tx: bsv.Transaction) => {
-            return new bsv.Transaction.Output({
+        tx.setOutput(0, (tx: Transaction) => {
+            return new Transaction.Output({
                 script: buildPublicKeyHashScript(anyone),
                 satoshis: tx.inputAmount - tx.getEstimateFee(),
             })
@@ -134,7 +135,7 @@ export class Crowdfund extends SmartContract {
                     inputIndex,
                     privateKey,
                 },
-                (tx: bsv.Transaction) => {
+                (tx: Transaction) => {
                     this.unlockFrom = { tx, inputIndex }
                     return this.getUnlockingScript((self) => {
                         self.refund(Sig(tx.getSignature(0) as string))

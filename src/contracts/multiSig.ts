@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     FixedArray,
     checkMultiSig,
     method,
@@ -14,6 +13,8 @@ import {
     signTx,
     hash160,
 } from 'scrypt-ts'
+
+import { PublicKey, PrivateKey, Transaction } from 'bsv'
 
 export class MultiSig extends SmartContract {
     // Number of key total.
@@ -42,9 +43,9 @@ export class MultiSig extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -55,13 +56,13 @@ export class MultiSig extends SmartContract {
 
     // Local method to construct TX calling a deployed contract.
     getCallTx(
-        pubKeys: bsv.PublicKey[],
-        privKeys: bsv.PrivateKey[],
-        prevTx: bsv.Transaction
-    ): bsv.Transaction {
+        pubKeys: PublicKey[],
+        privKeys: PrivateKey[],
+        prevTx: Transaction
+    ): Transaction {
         const inputIndex = 0
 
-        const tx = new bsv.Transaction().addInputFromPrevTx(prevTx)
+        const tx = new Transaction().addInputFromPrevTx(prevTx)
 
         const sigs = [...Array(MultiSig.N)].map((_, i) => {
             tx.getSignature(inputIndex)

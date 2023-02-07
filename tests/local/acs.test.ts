@@ -1,9 +1,10 @@
 import { expect } from 'chai'
-import { PubKeyHash, bsv, toHex, buildPublicKeyHashScript } from 'scrypt-ts'
+import { PubKeyHash, toHex, buildPublicKeyHashScript } from 'scrypt-ts'
 import { AnyoneCanSpend } from '../../src/contracts/acs'
 import { inputIndex } from './util/txHelper'
+import { crypto, PublicKey, PrivateKey, Transaction } from 'bsv'
 
-const Signature = bsv.crypto.Signature
+const Signature = crypto.Signature
 // Note: ANYONECANPAY
 const sighashType =
     Signature.SIGHASH_ANYONECANPAY |
@@ -16,11 +17,11 @@ describe('Test SmartContract `AnyoneCanSpend`', () => {
     })
 
     it('should transpile contract `AnyoneCanSpend` successfully.', async () => {
-        const privateKeyAlice = bsv.PrivateKey.fromRandom('testnet')
+        const privateKeyAlice = PrivateKey.fromRandom('testnet')
         console.log(`Private key generated: '${privateKeyAlice.toWIF()}'`)
 
-        const publicKeyAlice = bsv.PublicKey.fromPrivateKey(privateKeyAlice)
-        const publicKeyHashAlice = bsv.crypto.Hash.sha256ripemd160(
+        const publicKeyAlice = PublicKey.fromPrivateKey(privateKeyAlice)
+        const publicKeyHashAlice = crypto.Hash.sha256ripemd160(
             publicKeyAlice.toBuffer()
         )
 
@@ -31,11 +32,11 @@ describe('Test SmartContract `AnyoneCanSpend`', () => {
         const initBalance = 1000
 
         const outputIndex = 0
-        const callTx: bsv.Transaction = new bsv.Transaction()
+        const callTx: Transaction = new Transaction()
             .addDummyInput(anyoneCanSpend.lockingScript, initBalance)
             .setOutput(outputIndex, () => {
                 // bind contract & tx locking relation
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     // use the locking script of newInstance, as the locking script of the new UTXO
                     script: buildPublicKeyHashScript(
                         PubKeyHash(toHex(publicKeyHashAlice))
@@ -48,7 +49,7 @@ describe('Test SmartContract `AnyoneCanSpend`', () => {
                     inputIndex,
                     sigtype: sighashType,
                 },
-                (tx: bsv.Transaction) => {
+                (tx: Transaction) => {
                     // bind contract & tx unlocking relation
                     // use the cloned version because this callback will be executed multiple times during tx building process,
                     // and calling contract method may have side effects on its properties.

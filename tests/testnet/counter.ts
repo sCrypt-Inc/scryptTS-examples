@@ -6,7 +6,7 @@ import {
     testnetDefaultSigner,
     sleep,
 } from './util/txHelper'
-import { bsv } from 'scrypt-ts'
+import { Transaction, crypto } from 'bsv'
 
 async function main() {
     await Counter.compile()
@@ -34,12 +34,12 @@ async function main() {
         // 2. apply the updates on the new instance.
         newCounter.count++
         // 3. construct a transaction for contract call
-        const unsignedCallTx: bsv.Transaction = await new bsv.Transaction()
+        const unsignedCallTx: Transaction = await new Transaction()
             .addInputFromPrevTx(prevTx)
             .from(await fetchUtxos())
-            .setOutput(outputIndex, (tx: bsv.Transaction) => {
+            .setOutput(outputIndex, (tx: Transaction) => {
                 newCounter.lockTo = { tx, outputIndex }
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: newCounter.lockingScript,
                     satoshis: tx.getInputAmount(inputIndex),
                 })
@@ -48,9 +48,9 @@ async function main() {
             .setInputScriptAsync(
                 {
                     inputIndex,
-                    sigtype: bsv.crypto.Signature.ANYONECANPAY_SINGLE,
+                    sigtype: crypto.Signature.ANYONECANPAY_SINGLE,
                 },
-                (tx: bsv.Transaction) => {
+                (tx: Transaction) => {
                     // bind contract & tx unlocking relation
                     prevInstance.unlockFrom = { tx, inputIndex }
 

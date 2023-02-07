@@ -1,6 +1,14 @@
-import { bsv, TestWallet, UTXO, WhatsonchainProvider } from 'scrypt-ts'
+import { TestWallet, UTXO, WhatsonchainProvider } from 'scrypt-ts'
 import { randomBytes } from 'crypto'
 import { myPrivateKey } from './privateKey'
+import {
+    Transaction,
+    Script,
+    PrivateKey,
+    PublicKey,
+    crypto,
+    Networks,
+} from 'bsv'
 import axios from 'axios'
 
 const API_PREFIX = 'https://api.whatsonchain.com/v1/bsv/test'
@@ -26,18 +34,18 @@ export async function fetchUtxos(
         txId: utxo.tx_hash,
         outputIndex: utxo.tx_pos,
         satoshis: utxo.value,
-        script: bsv.Script.buildPublicKeyHashOut(address).toHex(),
+        script: Script.buildPublicKeyHashOut(address).toHex(),
     }))
 }
 
 export function newTx(utxos?: Array<UTXO>) {
     if (utxos) {
-        return new bsv.Transaction().from(utxos)
+        return new Transaction().from(utxos)
     }
-    return new bsv.Transaction().from(dummyUTXO)
+    return new Transaction().from(dummyUTXO)
 }
 
-export async function sendTx(tx: bsv.Transaction): Promise<string> {
+export async function sendTx(tx: Transaction): Promise<string> {
     try {
         const { data: txid } = await axios.post(`${API_PREFIX}/tx/raw`, {
             txhex: tx.toString(),
@@ -61,10 +69,10 @@ export const sleep = async (seconds: number) => {
 }
 
 export async function signAndSend(
-    tx: bsv.Transaction,
-    privKey: bsv.PrivateKey = myPrivateKey,
+    tx: Transaction,
+    privKey: PrivateKey = myPrivateKey,
     autoChange = true
-): Promise<bsv.Transaction> {
+): Promise<Transaction> {
     if (autoChange) {
         tx.change(privKey.toAddress())
     }
@@ -84,18 +92,16 @@ export async function signAndSend(
 }
 
 export function randomPrivateKey() {
-    const privateKey = bsv.PrivateKey.fromRandom('testnet')
-    const publicKey = bsv.PublicKey.fromPrivateKey(privateKey)
-    const publicKeyHash = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
+    const privateKey = PrivateKey.fromRandom('testnet')
+    const publicKey = PublicKey.fromPrivateKey(privateKey)
+    const publicKeyHash = crypto.Hash.sha256ripemd160(publicKey.toBuffer())
     const address = publicKey.toAddress()
     return [privateKey, publicKey, publicKeyHash, address] as const
 }
 
-export async function getTestnetSigner(
-    privateKey?: bsv.PrivateKey | bsv.PrivateKey[]
-) {
+export async function getTestnetSigner(privateKey?: PrivateKey | PrivateKey[]) {
     return new TestWallet(privateKey || myPrivateKey).connect(
-        new WhatsonchainProvider(bsv.Networks.testnet)
+        new WhatsonchainProvider(Networks.testnet)
     )
 }
 

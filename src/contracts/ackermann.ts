@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     ByteString,
     int2ByteString,
     len,
@@ -10,6 +9,8 @@ import {
     byteString2Int,
     UTXO,
 } from 'scrypt-ts'
+
+import { Transaction } from 'bsv'
 
 export class Ackermann extends SmartContract {
     // Maximum number of iterations of the Ackermann function.
@@ -66,9 +67,9 @@ export class Ackermann extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -77,8 +78,8 @@ export class Ackermann extends SmartContract {
         return tx
     }
 
-    getCallTx(y: bigint, prevTx: bsv.Transaction): bsv.Transaction {
-        return new bsv.Transaction()
+    getCallTx(y: bigint, prevTx: Transaction): Transaction {
+        return new Transaction()
             .addInputFromPrevTx(prevTx)
             .setInputScript(0, () => {
                 return this.getUnlockingScript((self) => self.unlock(y))

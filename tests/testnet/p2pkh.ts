@@ -7,7 +7,8 @@ import {
 } from './util/txHelper'
 import { myAddress, myPublicKeyHash } from './util/privateKey'
 
-import { bsv, PubKey, Ripemd160, Sig, toHex, utxoFromOutput } from 'scrypt-ts'
+import { PubKey, Ripemd160, Sig, toHex, utxoFromOutput } from 'scrypt-ts'
+import { Transaction } from 'bsv'
 
 async function main() {
     await P2PKH.compile()
@@ -22,10 +23,10 @@ async function main() {
 
     // call
     const changeAddress = await (await testnetDefaultSigner).getDefaultAddress()
-    const unsignedCallTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallTx: Transaction = await new Transaction()
         .addInputFromPrevTx(deployTx)
         .change(changeAddress)
-        .setInputScriptAsync({ inputIndex }, (tx: bsv.Transaction) => {
+        .setInputScriptAsync({ inputIndex }, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             p2pkh.unlockFrom = { tx, inputIndex }
             // use the cloned version because this callback may be executed multiple times during tx building process,

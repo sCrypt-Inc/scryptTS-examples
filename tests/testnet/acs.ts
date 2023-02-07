@@ -5,7 +5,8 @@ import {
     outputIndex,
     testnetDefaultSigner,
 } from './util/txHelper'
-import { bsv, Ripemd160, toHex } from 'scrypt-ts'
+import { Ripemd160, toHex } from 'scrypt-ts'
+import { Transaction, crypto } from 'bsv'
 import { myPublicKeyHash } from './util/privateKey'
 
 async function main() {
@@ -21,15 +22,15 @@ async function main() {
 
     // contract call
     const changeAddress = await (await testnetDefaultSigner).getDefaultAddress()
-    const unsignedCallTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallTx: Transaction = await new Transaction()
         .addInputFromPrevTx(deployTx)
         .change(changeAddress)
         .setInputScriptAsync(
             {
                 inputIndex,
-                sigtype: bsv.crypto.Signature.ANYONECANPAY_SINGLE,
+                sigtype: crypto.Signature.ANYONECANPAY_SINGLE,
             },
-            (tx: bsv.Transaction) => {
+            (tx: Transaction) => {
                 // bind contract & tx unlocking relation
                 acs.unlockFrom = { tx, inputIndex }
                 // use the cloned version because this callback may be executed multiple times during tx building process,

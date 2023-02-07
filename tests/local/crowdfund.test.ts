@@ -1,15 +1,16 @@
 import { expect } from 'chai'
-import { PubKey, PubKeyHash, Sig, bsv, toHex } from 'scrypt-ts'
+import { PubKey, PubKeyHash, Sig, toHex } from 'scrypt-ts'
 import { Crowdfund } from '../../src/contracts/crowdfund'
 import { inputIndex, dummyUTXO } from './util/txHelper'
+import { PrivateKey, PublicKey, crypto } from 'bsv'
 
-const privateKeyRecipient = bsv.PrivateKey.fromRandom('testnet')
-const pkhRecipient = bsv.crypto.Hash.sha256ripemd160(
+const privateKeyRecipient = PrivateKey.fromRandom('testnet')
+const pkhRecipient = crypto.Hash.sha256ripemd160(
     privateKeyRecipient.publicKey.toBuffer()
 )
 
-const privateKeyContributor = bsv.PrivateKey.fromRandom('testnet')
-const privateKeyPublicKey = bsv.PublicKey.fromPrivateKey(privateKeyContributor)
+const privateKeyContributor = PrivateKey.fromRandom('testnet')
+const privateKeyPublicKey = PublicKey.fromPrivateKey(privateKeyContributor)
 
 describe('Test SmartContract `Crowdfund`', () => {
     before(async () => {

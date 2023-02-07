@@ -4,7 +4,8 @@ import {
     inputSatoshis,
     testnetDefaultSigner,
 } from './util/txHelper'
-import { bsv, toByteString } from 'scrypt-ts'
+import { toByteString } from 'scrypt-ts'
+import { Transaction } from 'bsv'
 
 async function main() {
     await HelloWorld.compile()
@@ -19,10 +20,10 @@ async function main() {
 
     // contract call
     const changeAddress = await (await testnetDefaultSigner).getDefaultAddress()
-    const unsignedCallTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallTx: Transaction = await new Transaction()
         .addInputFromPrevTx(deployTx)
         .change(changeAddress)
-        .setInputScriptAsync({ inputIndex }, (tx: bsv.Transaction) => {
+        .setInputScriptAsync({ inputIndex }, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             helloworld.unlockFrom = { tx, inputIndex }
             // use the cloned version because this callback may be executed multiple times during tx building process,

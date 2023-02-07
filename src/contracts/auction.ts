@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     buildPublicKeyHashScript,
     ByteString,
     hash256,
@@ -13,6 +12,8 @@ import {
     Utils,
     UTXO,
 } from 'scrypt-ts'
+
+import { PrivateKey, Transaction, Script } from 'bsv'
 
 export class Auction extends SmartContract {
     public static readonly LOCKTIME_BLOCK_HEIGHT_MARKER = 500000000
@@ -104,9 +105,9 @@ export class Auction extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -118,32 +119,32 @@ export class Auction extends SmartContract {
     // Local method to construct TX for a bid.
     getCallTxForBid(
         utxos: UTXO[],
-        prevTx: bsv.Transaction,
+        prevTx: Transaction,
         nextInst: Auction,
         bidder: PubKeyHash,
         bid: number
-    ): bsv.Transaction {
+    ): Transaction {
         const inputIndex = 0
-        return new bsv.Transaction()
+        return new Transaction()
             .addInputFromPrevTx(prevTx)
             .from(utxos)
-            .setOutput(0, (tx: bsv.Transaction) => {
+            .setOutput(0, (tx: Transaction) => {
                 nextInst.lockTo = { tx, outputIndex: 0 }
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: nextInst.lockingScript,
                     satoshis: bid,
                 })
             })
-            .setOutput(1, (tx: bsv.Transaction) => {
+            .setOutput(1, (tx: Transaction) => {
                 nextInst.lockTo = { tx, outputIndex: 0 }
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: buildPublicKeyHashScript(this.bidder),
                     satoshis: tx.getInputAmount(inputIndex),
                 })
             })
-            .setOutput(2, (tx: bsv.Transaction) => {
+            .setOutput(2, (tx: Transaction) => {
                 nextInst.lockTo = { tx, outputIndex: 0 }
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: buildPublicKeyHashScript(bidder),
                     satoshis:
                         tx.inputAmount - tx.outputAmount - tx.getEstimateFee(),
@@ -153,7 +154,7 @@ export class Auction extends SmartContract {
                 {
                     inputIndex,
                 },
-                (tx: bsv.Transaction) => {
+                (tx: Transaction) => {
                     this.unlockFrom = { tx, inputIndex }
                     return this.getUnlockingScript((self) => {
                         self.bid(
@@ -169,12 +170,11 @@ export class Auction extends SmartContract {
     // Local method to construct TX for closing the auction.
     getCallTxForClose(
         timeNow: number,
-        privateKey: bsv.PrivateKey,
-        prevTx: bsv.Transaction
+        privateKey: PrivateKey,
+        prevTx: Transaction
     ) {
         const inputIndex = 0
-        const callTx: bsv.Transaction =
-            new bsv.Transaction().addInputFromPrevTx(prevTx)
+        const callTx: Transaction = new Transaction().addInputFromPrevTx(prevTx)
 
         callTx.setLockTime(timeNow)
         callTx.setInputSequence(inputIndex, 0)
@@ -194,8 +194,8 @@ export class Auction extends SmartContract {
                 }
             )
             .addOutput(
-                new bsv.Transaction.Output({
-                    script: bsv.Script.buildPublicKeyHashOut(
+                new Transaction.Output({
+                    script: Script.buildPublicKeyHashOut(
                         privateKey.toPublicKey()
                     ),
                     satoshis: Number(this.ctx.utxo.value),

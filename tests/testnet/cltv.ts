@@ -4,7 +4,7 @@ import {
     inputSatoshis,
     testnetDefaultSigner,
 } from './util/txHelper'
-import { bsv } from 'scrypt-ts'
+import { Transaction } from 'bsv'
 
 async function main() {
     await CheckLockTimeVerify.compile()
@@ -23,12 +23,12 @@ async function main() {
 
     // contract call
     const changeAddress = await (await testnetDefaultSigner).getDefaultAddress()
-    const unsignedCallTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallTx: Transaction = await new Transaction()
         .addInputFromPrevTx(deployTx)
         .change(changeAddress)
         .setLockTime(timeNow)
         .setInputSequence(inputIndex, 0)
-        .setInputScriptAsync({ inputIndex }, (tx: bsv.Transaction) => {
+        .setInputScriptAsync({ inputIndex }, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             cltv.unlockFrom = { tx, inputIndex }
 

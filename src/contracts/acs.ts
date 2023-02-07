@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     buildPublicKeyHashScript,
     ByteString,
     hash256,
@@ -12,6 +11,8 @@ import {
     Utils,
     UTXO,
 } from 'scrypt-ts'
+
+import { Transaction, crypto } from 'bsv'
 
 export class AnyoneCanSpend extends SmartContract {
     // Address of the recipient.
@@ -39,9 +40,9 @@ export class AnyoneCanSpend extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -53,15 +54,12 @@ export class AnyoneCanSpend extends SmartContract {
     // Local method to construct TX calling a deployed contract.
     // Due to our choice of SIGHASH flags, anyone can add an extra
     // input to the transaction.
-    getCallTx(
-        prevTx: bsv.Transaction,
-        changeAddress: PubKeyHash
-    ): bsv.Transaction {
+    getCallTx(prevTx: Transaction, changeAddress: PubKeyHash): Transaction {
         const inputIndex = 0
-        return new bsv.Transaction()
+        return new Transaction()
             .addInputFromPrevTx(prevTx)
             .setOutput(0, (tx) => {
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: buildPublicKeyHashScript(changeAddress),
                     satoshis: tx.inputAmount - tx.getChangeAmount(),
                 })
@@ -69,7 +67,7 @@ export class AnyoneCanSpend extends SmartContract {
             .setInputScript(
                 {
                     inputIndex,
-                    sigtype: bsv.crypto.Signature.ANYONECANPAY_SINGLE,
+                    sigtype: crypto.Signature.ANYONECANPAY_SINGLE,
                 },
                 (tx) => {
                     this.unlockFrom = { tx, inputIndex }

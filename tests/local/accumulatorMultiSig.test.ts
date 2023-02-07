@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Ripemd160, bsv, toHex, PubKey, Sig, signTx } from 'scrypt-ts'
+import { Ripemd160, toHex, PubKey, Sig, signTx } from 'scrypt-ts'
 import { AccumulatorMultiSig } from '../../src/contracts/accumulatorMultiSig'
 import {
     newTx,
@@ -7,13 +7,14 @@ import {
     inputSatoshis,
     randomPrivateKey,
 } from './util/txHelper'
+import { PrivateKey } from 'bsv'
 
 describe('Test SmartContract `AccumulatorMultiSig`', () => {
     const [privateKey1, publicKey1, publicKeyHash1] = randomPrivateKey()
     const [privateKey2, publicKey2, publicKeyHash2] = randomPrivateKey()
     const [privateKey3, publicKey3, publicKeyHash3] = randomPrivateKey()
 
-    const privateKeyWrong = bsv.PrivateKey.fromRandom('testnet')
+    const privateKeyWrong = PrivateKey.fromRandom('testnet')
 
     before(async () => {
         await AccumulatorMultiSig.compile()

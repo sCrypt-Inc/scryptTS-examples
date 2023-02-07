@@ -1,4 +1,5 @@
-import { method, prop, SmartContract, assert, bsv, UTXO } from 'scrypt-ts'
+import { method, prop, SmartContract, assert, UTXO } from 'scrypt-ts'
+import { Transaction } from 'bsv'
 
 export class CheckLockTimeVerify extends SmartContract {
     public static readonly LOCKTIME_BLOCK_HEIGHT_MARKER = 500000000
@@ -30,9 +31,9 @@ export class CheckLockTimeVerify extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], satoshis: number): bsv.Transaction {
-        return new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], satoshis: number): Transaction {
+        return new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: satoshis,
             })
@@ -40,19 +41,14 @@ export class CheckLockTimeVerify extends SmartContract {
     }
 
     // Local method to construct TX that calls deployed contract.
-    getCallTxForUnlock(
-        timeNow: number,
-        prevTx: bsv.Transaction
-    ): bsv.Transaction {
+    getCallTxForUnlock(timeNow: number, prevTx: Transaction): Transaction {
         const inputIndex = 0
-        let callTx: bsv.Transaction = new bsv.Transaction().addInputFromPrevTx(
-            prevTx
-        )
+        let callTx: Transaction = new Transaction().addInputFromPrevTx(prevTx)
 
         callTx.setLockTime(timeNow)
         callTx.setInputSequence(inputIndex, 0)
 
-        callTx = callTx.setInputScript(inputIndex, (tx: bsv.Transaction) => {
+        callTx = callTx.setInputScript(inputIndex, (tx: Transaction) => {
             return this.getUnlockingScript((cloned) => {
                 // Call cloned contract's public method to get the unlocking script.
                 cloned.unlockFrom = { tx, inputIndex }

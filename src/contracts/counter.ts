@@ -1,13 +1,14 @@
 import {
     SigHash,
     assert,
-    bsv,
     hash256,
     method,
     prop,
     SmartContract,
     UTXO,
 } from 'scrypt-ts'
+
+import { Transaction, crypto } from 'bsv'
 
 export class Counter extends SmartContract {
     // Stateful prop to store counters value.
@@ -37,10 +38,10 @@ export class Counter extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
         this.balance = initBalance
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -52,16 +53,16 @@ export class Counter extends SmartContract {
     // Local method to construct TX calling deployed smart contract.
     getCallTx(
         utxos: UTXO[],
-        prevTx: bsv.Transaction,
+        prevTx: Transaction,
         nextInst: Counter
-    ): bsv.Transaction {
+    ): Transaction {
         const inputIndex = 0
-        return new bsv.Transaction()
+        return new Transaction()
             .addInputFromPrevTx(prevTx)
             .from(utxos)
-            .setOutput(0, (tx: bsv.Transaction) => {
+            .setOutput(0, (tx: Transaction) => {
                 nextInst.lockTo = { tx, outputIndex: 0 }
-                return new bsv.Transaction.Output({
+                return new Transaction.Output({
                     script: nextInst.lockingScript,
                     satoshis: this.balance,
                 })
@@ -69,9 +70,9 @@ export class Counter extends SmartContract {
             .setInputScript(
                 {
                     inputIndex,
-                    sigtype: bsv.crypto.Signature.ANYONECANPAY_SINGLE,
+                    sigtype: crypto.Signature.ANYONECANPAY_SINGLE,
                 },
-                (tx: bsv.Transaction) => {
+                (tx: Transaction) => {
                     this.unlockFrom = { tx, inputIndex }
                     return this.getUnlockingScript((self) => {
                         self.increment()

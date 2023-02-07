@@ -8,7 +8,6 @@ import {
     testnetDefaultSigner,
 } from './util/txHelper'
 import {
-    bsv,
     PubKey,
     PubKeyHash,
     Sig,
@@ -22,6 +21,7 @@ import {
     myPublicKey,
     myPublicKeyHash,
 } from './util/privateKey'
+import { Transaction } from 'bsv'
 
 async function main() {
     await Auction.compile()
@@ -62,22 +62,22 @@ async function main() {
     const newInstance = auction.next()
     newInstance.bidder = PubKeyHash(toHex(publicKeyHashNewBidder))
     // 2. construct a transaction for contract call
-    const unsignedCallBidTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallBidTx: Transaction = await new Transaction()
         // contract previous state input
         .addInputFromPrevTx(deployTx)
         // gas inputs
         .from(await fetchUtxos())
         // contract new state output
-        .setOutput(outputIndex, (tx: bsv.Transaction) => {
+        .setOutput(outputIndex, (tx: Transaction) => {
             newInstance.lockTo = { tx, outputIndex }
-            return new bsv.Transaction.Output({
+            return new Transaction.Output({
                 script: newInstance.lockingScript,
                 satoshis: newBid, // continues with a higher bid
             })
         })
         // contract refund output
         .setOutput(1, () => {
-            return new bsv.Transaction.Output({
+            return new Transaction.Output({
                 script: buildPublicKeyHashScript(
                     PubKeyHash(toHex(publicKeyHashHighestBidder))
                 ),
@@ -86,7 +86,7 @@ async function main() {
         })
         // change output
         .change(changeAddress)
-        .setInputScriptAsync(inputIndex, (tx: bsv.Transaction) => {
+        .setInputScriptAsync(inputIndex, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             auction.unlockFrom = { tx, inputIndex }
 
@@ -108,12 +108,12 @@ async function main() {
     // contract call `close`
     // avoid mempool conflicts, sleep to allow previous tx "sink-into" the network
     await sleep(5)
-    const unsignedCallCloseTx: bsv.Transaction = await new bsv.Transaction()
+    const unsignedCallCloseTx: Transaction = await new Transaction()
         .addInputFromPrevTx(bidTx)
         .change(changeAddress)
         .setInputSequence(inputIndex, 0)
         .setLockTime(timeNow)
-        .setInputScriptAsync(inputIndex, (tx: bsv.Transaction) => {
+        .setInputScriptAsync(inputIndex, (tx: Transaction) => {
             // bind contract & tx unlocking relation
             newInstance.unlockFrom = { tx, inputIndex }
 

@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     ByteString,
     method,
     prop,
@@ -9,6 +8,8 @@ import {
     SmartContract,
     UTXO,
 } from 'scrypt-ts'
+
+import { Transaction } from 'bsv'
 
 export class HashPuzzle extends SmartContract {
     @prop()
@@ -27,9 +28,9 @@ export class HashPuzzle extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], satoshis: number): bsv.Transaction {
-        return new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], satoshis: number): Transaction {
+        return new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: satoshis,
             })
@@ -37,8 +38,8 @@ export class HashPuzzle extends SmartContract {
     }
 
     // Local method to construct TX that calls deployed contract.
-    getCallTx(data: ByteString, prevTx: bsv.Transaction): bsv.Transaction {
-        return new bsv.Transaction()
+    getCallTx(data: ByteString, prevTx: Transaction): Transaction {
+        return new Transaction()
             .addInputFromPrevTx(prevTx)
             .setInputScript(0, () => {
                 return this.getUnlockingScript((self) => self.unlock(data))

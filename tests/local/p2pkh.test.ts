@@ -1,13 +1,14 @@
 import { expect } from 'chai'
-import { PubKey, PubKeyHash, Sig, bsv, signTx, toHex } from 'scrypt-ts'
+import { PubKey, PubKeyHash, Sig, signTx, toHex } from 'scrypt-ts'
 import { P2PKH } from '../../src/contracts/p2pkh'
 import { newTx, inputIndex, inputSatoshis, dummyUTXO } from './util/txHelper'
+import { PrivateKey, crypto } from 'bsv'
 
-const privateKey = bsv.PrivateKey.fromRandom('testnet')
+const privateKey = PrivateKey.fromRandom('testnet')
 const publicKey = privateKey.publicKey
-const pkh = bsv.crypto.Hash.sha256ripemd160(publicKey.toBuffer())
+const pkh = crypto.Hash.sha256ripemd160(publicKey.toBuffer())
 
-const privateKey2 = bsv.PrivateKey.fromRandom('testnet')
+const privateKey2 = PrivateKey.fromRandom('testnet')
 
 describe('Test SmartContract `P2PKH`', () => {
     before(async () => {

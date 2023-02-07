@@ -1,6 +1,5 @@
 import {
     assert,
-    bsv,
     hash160,
     method,
     prop,
@@ -11,6 +10,8 @@ import {
     toHex,
     UTXO,
 } from 'scrypt-ts'
+
+import { Transaction, PublicKey, PrivateKey } from 'bsv'
 
 export class P2PKH extends SmartContract {
     // Address of the recipient.
@@ -34,9 +35,9 @@ export class P2PKH extends SmartContract {
     }
 
     // Local method to construct deployment TX.
-    getDeployTx(utxos: UTXO[], initBalance: number): bsv.Transaction {
-        const tx = new bsv.Transaction().from(utxos).addOutput(
-            new bsv.Transaction.Output({
+    getDeployTx(utxos: UTXO[], initBalance: number): Transaction {
+        const tx = new Transaction().from(utxos).addOutput(
+            new Transaction.Output({
                 script: this.lockingScript,
                 satoshis: initBalance,
             })
@@ -47,12 +48,12 @@ export class P2PKH extends SmartContract {
 
     // Local method to construct TX calling a deployed contract.
     getCallTx(
-        pubKey: bsv.PublicKey,
-        privateKey: bsv.PrivateKey,
-        prevTx: bsv.Transaction
-    ): bsv.Transaction {
+        pubKey: PublicKey,
+        privateKey: PrivateKey,
+        prevTx: Transaction
+    ): Transaction {
         const inputIndex = 0
-        return new bsv.Transaction().addInputFromPrevTx(prevTx).setInputScript(
+        return new Transaction().addInputFromPrevTx(prevTx).setInputScript(
             {
                 inputIndex,
                 privateKey,
