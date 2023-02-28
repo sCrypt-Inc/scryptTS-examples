@@ -20,7 +20,7 @@ async function recoverInstance(
     const instance = await createInitialInstance()
     // sync state from tx
     instance.syncState(tx, atOutputIndex)
-    console.log('Counter instance recoverd')
+    console.log('Counter instance recovered')
     return instance
 }
 
